@@ -3,6 +3,7 @@ package com.example.gestion_compte_security.controller;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.*;
@@ -33,7 +34,7 @@ public class Oauth2_controller {
     }
 
     @PostMapping("/login")
-    public Map<String, String> login(@RequestParam String username, @RequestParam String password){
+    public Map<String, String> login( String username, String password){
         System.out.println("Login attempt with username: " + username);
         // vérifier authetification
         Authentication authenticate = authenticationManager.authenticate(
@@ -46,11 +47,7 @@ public class Oauth2_controller {
 
        // String scopes =  authenticate.getAuthorities().stream().map(auth -> auth.getAuthority()).collect(Collectors.joining(" "));
 
-        var scopes = authenticate.getAuthorities()
-                .stream()
-                .map(auth -> auth.getAuthority())
-                .collect(Collectors.toList());
-
+        String scopes =  authenticate.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(" "));
 
 
         System.out.println("scope: " + scopes);
@@ -75,7 +72,7 @@ public class Oauth2_controller {
                 .expiresAt(instant.plus(15, ChronoUnit.MINUTES))
 
                 .claim("name",authenticate.getName())
-                .claim("SCOPE",scopes)
+
                 .build();
         String RefreshToken = jwtEncoder.encode(JwtEncoderParameters.from(jwtClaimsSet_refresh_token)).getTokenValue();
 

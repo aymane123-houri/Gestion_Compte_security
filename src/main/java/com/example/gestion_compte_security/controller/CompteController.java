@@ -76,7 +76,7 @@ public class CompteController {
             }
     )
 
-
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Compte> add(@org.springframework.web.bind.annotation.RequestBody Compte compte){
         Compte compte1 = compteService.CreateCompte(compte);
         return ResponseEntity.ok(compte1);
@@ -95,7 +95,7 @@ public class CompteController {
                     ),
                     @ApiResponse(responseCode = "400", description = "Paramètre d'entrée non valide")
             }  )
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<Compte>> GetALL(){
         List<Compte> compteList = compteService.GetAllCompte();
         return ResponseEntity.ok(compteList);
@@ -126,12 +126,14 @@ public class CompteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity  Delete( @PathVariable Long id){
         compteService.DeleteCompte(id);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Compte> Update(@PathVariable Long id, @org.springframework.web.bind.annotation.RequestBody Compte c){
         Compte compte = compteService.UpdateCompte(id,c);
         return ResponseEntity.ok(compte);

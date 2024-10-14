@@ -12,8 +12,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
@@ -30,6 +32,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private  PasswordEncoder passwordEncoder;
@@ -41,16 +44,16 @@ public class SecurityConfig {
     }
 
 
-   /* private JwtAuthenticationConverter jwtAuthenticationConverter() {
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthorityPrefix("");  // Supprimer le préfixe 'SCOPE_' par défaut
+        grantedAuthoritiesConverter.setAuthorityPrefix("");
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("SCOPE");
 
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-        return jwtAuthenticationConverter;
+        JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return authenticationConverter;
     }
-*/
-
     // Authentication service
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsManager userDetailsManager) {
@@ -63,13 +66,13 @@ public class SecurityConfig {
     @Bean
     UserDetailsManager userDetailsManager() {
         return new InMemoryUserDetailsManager(
-                User.withUsername("admin").password(passwordEncoder.encode("1234")).roles("ADMIN").build(),
-                User.withUsername("user1").password(passwordEncoder.encode("1234")).roles("USER").build(),
-                User.withUsername("user2").password(passwordEncoder.encode("userPass")).roles("USER").build()
+                User.withUsername("admin").password(passwordEncoder.encode("1234")).authorities("ADMIN").build(),
+                User.withUsername("user1").password(passwordEncoder.encode("1234")).authorities("USER").build(),
+                User.withUsername("user2").password(passwordEncoder.encode("userPass")).authorities("USER").build()
         );
     }
 
-    @Bean
+    /*@Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -85,8 +88,22 @@ public class SecurityConfig {
                 .oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt) // Configure resource server for JWT
                 .httpBasic(Customizer.withDefaults()); // Basic HTTP authentication
         return httpSecurity.build();
+    }*/
+    @Bean
+    public SecurityFilterChain securityFilterChain (HttpSecurity httpSecurity) throws Exception{
+        return httpSecurity
+                .sessionManagement(sess-> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeRequests(auth -> auth
+                        .requestMatchers("/login/**", "/RefreshToken/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                )
+                .httpBasic(Customizer.withDefaults())
+                .build();
     }
-
     // Sign the JWT token
     @Bean
     JwtEncoder jwtEncoder() {
